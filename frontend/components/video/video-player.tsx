@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useRef, useState, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { cn } from '@/lib/utils';
+import { useRef, useState, useEffect } from "react";
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -22,7 +22,7 @@ export function VideoPlayer({ videoUrl, title }: VideoPlayerProps) {
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+  const controlsTimeoutRef = useRef<NodeJS.Timeout>(setTimeout(() => {}, 0));
 
   const getVideoUrl = (url: string) => {
     return `${process.env.NEXT_PUBLIC_UPLOADS_URL}${url}`;
@@ -35,12 +35,12 @@ export function VideoPlayer({ videoUrl, title }: VideoPlayerProps) {
     const updateTime = () => setCurrentTime(video.currentTime);
     const updateDuration = () => setDuration(video.duration);
 
-    video.addEventListener('timeupdate', updateTime);
-    video.addEventListener('loadedmetadata', updateDuration);
+    video.addEventListener("timeupdate", updateTime);
+    video.addEventListener("loadedmetadata", updateDuration);
 
     return () => {
-      video.removeEventListener('timeupdate', updateTime);
-      video.removeEventListener('loadedmetadata', updateDuration);
+      video.removeEventListener("timeupdate", updateTime);
+      video.removeEventListener("loadedmetadata", updateDuration);
     };
   }, []);
 
@@ -97,10 +97,10 @@ export function VideoPlayer({ videoUrl, title }: VideoPlayerProps) {
   };
 
   const formatTime = (seconds: number) => {
-    if (isNaN(seconds)) return '0:00';
+    if (isNaN(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const handleMouseMove = () => {
@@ -149,8 +149,8 @@ export function VideoPlayer({ videoUrl, title }: VideoPlayerProps) {
       {/* Controls */}
       <div
         className={cn(
-          'absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 transition-opacity duration-300',
-          showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
+          "absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/90 via-black/50 to-transparent p-4 transition-opacity duration-300",
+          showControls || !isPlaying ? "opacity-100" : "opacity-0"
         )}
       >
         {/* Progress Bar */}
@@ -216,11 +216,17 @@ export function VideoPlayer({ videoUrl, title }: VideoPlayerProps) {
               className="text-white hover:text-white hover:bg-white/20"
               onClick={toggleFullscreen}
             >
-              <Maximize className="w-5 h-5" />
+              {isFullscreen ? (
+                <Minimize className="w-5 h-5" />
+              ) : (
+                <Maximize className="w-5 h-5" />
+              )}
             </Button>
           </div>
         </div>
       </div>
+      {/* Video Title */}
+      <h2 className="text-white text-lg font-semibold">{title}</h2>
     </div>
   );
 }

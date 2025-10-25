@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PasswordInput } from '@/components/common/password-input';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
@@ -21,6 +22,7 @@ export default function RegisterPage() {
     username: '',
     email: '',
     password: '',
+    confirmPassword: '',
     channelName: '',
     channelDescription: '',
   });
@@ -54,6 +56,11 @@ export default function RegisterPage() {
 
     if (formData.password.length < 6) {
       toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
 
@@ -118,12 +125,26 @@ export default function RegisterPage() {
                 <Label htmlFor="password">
                   Password <span className="text-red-500">*</span>
                 </Label>
-                <Input
+                <PasswordInput
                   id="password"
                   name="password"
-                  type="password"
                   placeholder="••••••••"
                   value={formData.password}
+                  onChange={handleChange}
+                  disabled={registerMutation.isPending}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">
+                  Confirm Password <span className="text-red-500">*</span>
+                </Label>
+                <PasswordInput
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
                   onChange={handleChange}
                   disabled={registerMutation.isPending}
                   required

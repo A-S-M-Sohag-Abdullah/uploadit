@@ -3,8 +3,8 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { Loader2 } from 'lucide-react';
 import { VideoCard } from '@/components/video/video-card';
+import { VideoCardSkeleton } from '@/components/video/video-card-skeleton';
 import { videosApi } from '@/lib/api';
 import type { Video } from '@/types';
 
@@ -45,8 +45,10 @@ export function VideoGrid({ sort = '-createdAt' }: VideoGridProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {Array.from({ length: 12 }).map((_, index) => (
+          <VideoCardSkeleton key={index} />
+        ))}
       </div>
     );
   }
@@ -70,17 +72,23 @@ export function VideoGrid({ sort = '-createdAt' }: VideoGridProps) {
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {videos.map((video: Video) => (
           <VideoCard key={video._id} video={video} />
         ))}
       </div>
 
-      {/* Infinite scroll trigger */}
+      {/* Infinite scroll trigger with skeleton cards */}
       {hasNextPage && (
-        <div ref={ref} className="flex items-center justify-center py-8">
-          {isFetchingNextPage && <Loader2 className="w-6 h-6 animate-spin text-primary" />}
+        <div ref={ref}>
+          {isFetchingNextPage && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <VideoCardSkeleton key={`loading-${index}`} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

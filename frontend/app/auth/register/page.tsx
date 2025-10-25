@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PasswordInput } from '@/components/common/password-input';
+import { SocialAuthButtons } from '@/components/common/social-auth-buttons';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
@@ -88,6 +89,9 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Social Auth Buttons */}
+            <SocialAuthButtons />
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username">

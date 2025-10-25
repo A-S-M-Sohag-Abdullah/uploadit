@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/common/password-input";
+import { SocialAuthButtons } from "@/components/common/social-auth-buttons";
 import {
   Card,
   CardContent,
@@ -75,6 +76,9 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Social Auth Buttons */}
+            <SocialAuthButtons />
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

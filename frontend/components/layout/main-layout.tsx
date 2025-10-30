@@ -1,11 +1,15 @@
+import { cookies } from "next/headers";
 import { Navbar } from "./navbar";
 import { AppSidebar } from "./sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export function MainLayout({ children }: { children: React.ReactNode }) {
+export async function MainLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
+
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={defaultOpen}>
       <div className="flex h-screen w-full">
         <AppSidebar />
         <SidebarInset className="flex flex-col flex-1">

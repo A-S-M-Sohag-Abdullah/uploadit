@@ -13,8 +13,8 @@ export function Navbar() {
           {/* Custom Sidebar Trigger with Menu Icon */}
           <SidebarTrigger></SidebarTrigger>
 
-          {/* Logo - visible on small screens only */}
-          <Link href="/" className="flex items-center gap-2 lg:hidden">
+          {/* Logo - visible only when sidebar is hidden (mobile screens < 768px) */}
+          <Link href="/" className="flex items-center gap-2 md:hidden">
             <div className="w-8 h-8 bg-linear-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
               <Video className="w-5 h-5 text-white" />
             </div>

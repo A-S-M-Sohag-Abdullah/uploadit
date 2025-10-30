@@ -39,7 +39,7 @@ export function UserMenu() {
         </Button>
         <Button
           onClick={() => router.push('/auth/register')}
-          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          className="bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
         >
           Get Started
         </Button>
@@ -74,7 +74,7 @@ export function UserMenu() {
           <Button variant="ghost" size="icon" className="rounded-full">
             <Avatar className="w-8 h-8">
               <AvatarImage src={getAvatarUrl(user?.avatar)} alt={user?.username} />
-              <AvatarFallback className="bg-gradient-to-br from-purple-600 to-pink-600 text-white">
+              <AvatarFallback className="bg-linear-to-br from-purple-600 to-pink-600 text-white">
                 {user?.username?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -84,7 +84,7 @@ export function UserMenu() {
           <div className="flex items-center space-x-2 p-2">
             <Avatar className="w-10 h-10">
               <AvatarImage src={getAvatarUrl(user?.avatar)} alt={user?.username} />
-              <AvatarFallback className="bg-gradient-to-br from-purple-600 to-pink-600 text-white">
+              <AvatarFallback className="bg-linear-to-br from-purple-600 to-pink-600 text-white">
                 {user?.username?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>

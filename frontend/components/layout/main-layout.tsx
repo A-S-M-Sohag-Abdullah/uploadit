@@ -1,17 +1,24 @@
 import { Navbar } from "./navbar";
-import { Sidebar } from "./sidebar";
+import { AppSidebar } from "./sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-screen bg-background flex flex-col">
-      <Navbar />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <ScrollArea className="flex-1">
-          <main className="p-6">{children}</main>
-        </ScrollArea>
+    <SidebarProvider>
+      <div className="flex h-screen w-full">
+        <AppSidebar />
+        <SidebarInset className="flex flex-col flex-1">
+          <header className="flex-none sticky top-0 z-50">
+            <Navbar />
+          </header>
+          <div className="flex-1 min-h-0">
+            <ScrollArea className="h-full">
+              <main className="p-6">{children}</main>
+            </ScrollArea>
+          </div>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

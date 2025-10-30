@@ -15,6 +15,7 @@ import { VideoCard } from '@/components/video/video-card';
 import { videosApi, likesApi, subscriptionsApi, commentsApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
+import type { Comment as CommentType, Video } from '@/types';
 
 interface WatchPageClientProps {
   videoId: string;
@@ -300,7 +301,7 @@ export function WatchPageClient({ videoId }: WatchPageClientProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                {commentsData?.data.comments?.map((comment) => (
+                {(commentsData?.data.comments as CommentType[] | undefined)?.map((comment) => (
                   <div key={comment._id} className="flex gap-3">
                     <Avatar className="w-10 h-10">
                       <AvatarImage
@@ -334,7 +335,7 @@ export function WatchPageClient({ videoId }: WatchPageClientProps) {
       <div className="space-y-4">
         <h2 className="font-semibold text-lg">Recommended</h2>
         <div className="space-y-4">
-          {recommendedData?.data.videos?.map((recVideo) => (
+          {(recommendedData?.data.videos as Video[] | undefined)?.map((recVideo) => (
             <VideoCard key={recVideo._id} video={recVideo} />
           ))}
         </div>

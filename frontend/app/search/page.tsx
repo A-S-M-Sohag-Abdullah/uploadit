@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -10,7 +11,7 @@ import { VideoCard } from '@/components/video/video-card';
 import { videosApi } from '@/lib/api';
 import type { Video } from '@/types';
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   const { ref, inView } = useInView();
@@ -43,7 +44,7 @@ export default function SearchPage() {
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const videos = data?.pages.flatMap((page) => page.data.videos) || [];
+  const videos = data?.pages.flatMap((page) => page.data.videos as Video[]) || [];
 
   return (
     <MainLayout>
@@ -92,5 +93,19 @@ export default function SearchPage() {
         )}
       </div>
     </MainLayout>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <MainLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }

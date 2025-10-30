@@ -61,7 +61,7 @@ export function VideoGrid({ sort = '-createdAt' }: VideoGridProps) {
     );
   }
 
-  const videos = data?.pages.flatMap((page) => page.data.videos) || [];
+  const videos = data?.pages.flatMap((page) => page.data.videos as Video[]) || [];
 
   if (videos.length === 0) {
     return (

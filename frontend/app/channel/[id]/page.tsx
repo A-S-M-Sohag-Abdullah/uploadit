@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users, Video as VideoIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,38 +12,39 @@ import { videosApi, subscriptionsApi } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
 import { apiGet } from "@/lib/api/client";
-import type { User } from "@/types";
+import type { User, Video } from "@/types";
 
-export default function ChannelPage({ params }: { params: { id: string } }) {
+export default function ChannelPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const queryClient = useQueryClient();
   const { user: currentUser, isAuthenticated } = useAuthStore();
 
   // Fetch channel info
   const { data: channelData } = useQuery({
-    queryKey: ["channel", params.id],
+    queryKey: ["channel", id],
     queryFn: () =>
       apiGet<{ success: boolean; data: { user: User } }>(`/auth/me`),
   });
 
   // Fetch channel videos
   const { data: videosData } = useQuery({
-    queryKey: ["channelVideos", params.id],
-    queryFn: () => videosApi.getUserVideos(params.id, { limit: 20 }),
+    queryKey: ["channelVideos", id],
+    queryFn: () => videosApi.getUserVideos(id, { limit: 20 }),
   });
 
   // Fetch subscription status
   const { data: subStatusData } = useQuery({
-    queryKey: ["subscriptionStatus", params.id],
-    queryFn: () => subscriptionsApi.getSubscriptionStatus(params.id),
-    enabled: isAuthenticated && currentUser?._id !== params.id,
+    queryKey: ["subscriptionStatus", id],
+    queryFn: () => subscriptionsApi.getSubscriptionStatus(id),
+    enabled: isAuthenticated && currentUser?._id !== id,
   });
 
   // Subscribe mutation
   const subscribeMutation = useMutation({
-    mutationFn: () => subscriptionsApi.toggleSubscription(params.id),
+    mutationFn: () => subscriptionsApi.toggleSubscription(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["subscriptionStatus", params.id],
+        queryKey: ["subscriptionStatus", id],
       });
       toast.success("Subscription updated");
     },
@@ -50,7 +52,7 @@ export default function ChannelPage({ params }: { params: { id: string } }) {
   });
 
   const channel = channelData?.data.user;
-  const videos = videosData?.data.videos || [];
+  const videos = (videosData?.data.videos as Video[] | undefined) || [];
 
   const getAvatarUrl = (avatar?: string) => {
     if (!avatar) return "";
@@ -100,7 +102,7 @@ export default function ChannelPage({ params }: { params: { id: string } }) {
                 </p>
               )}
 
-              {isAuthenticated && currentUser?._id !== params.id && (
+              {isAuthenticated && currentUser?._id !== id && (
                 <Button
                   onClick={() => subscribeMutation.mutate()}
                   disabled={subscribeMutation.isPending}

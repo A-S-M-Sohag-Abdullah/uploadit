@@ -3,11 +3,13 @@ import { WatchPageClient } from './watch-page-client';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function WatchPage({ params }: { params: { id: string } }) {
+export default async function WatchPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   return (
     <MainLayout>
       <Suspense fallback={<WatchPageSkeleton />}>
-        <WatchPageClient videoId={params.id} />
+        <WatchPageClient videoId={id} />
       </Suspense>
     </MainLayout>
   );

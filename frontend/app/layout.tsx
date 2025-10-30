@@ -4,6 +4,8 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { cookies } from "next/headers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -12,11 +14,14 @@ export const metadata: Metadata = {
   description: "A premium video streaming platform where creators share their content with millions of viewers worldwide.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
@@ -27,8 +32,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            {children}
-            <Toaster richColors position="top-right" />
+            <SidebarProvider defaultOpen={defaultOpen}>
+              {children}
+              <Toaster richColors position="top-right" />
+            </SidebarProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

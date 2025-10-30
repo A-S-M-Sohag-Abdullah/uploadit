@@ -1,5 +1,5 @@
 import { MainLayout } from '@/components/layout/main-layout';
-import { VideoGrid } from './components/video-grid';
+import { VideoGrid } from '@/components/video/video-grid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function Home() {

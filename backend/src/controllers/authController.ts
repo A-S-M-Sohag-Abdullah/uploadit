@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { User } from '../models';
 import { generateToken } from '../utils/jwt';
 import { ApiResponse } from '../utils/response';
@@ -40,7 +41,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
 
     // Generate token
-    const token = generateToken(user._id.toString());
+    const token = generateToken((user._id as Types.ObjectId).toString());
 
     ApiResponse.created(res, { user, token }, 'User registered successfully');
   } catch (error: any) {
@@ -81,7 +82,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Generate token
-    const token = generateToken(user._id.toString());
+    const token = generateToken((user._id as Types.ObjectId).toString());
 
     // Remove password from response
     const userWithoutPassword = user.toJSON();

@@ -12,7 +12,7 @@ uploadDirs.forEach((dir) => {
 
 // Storage configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_req, file, cb) => {
     let uploadPath = 'uploads/';
 
     if (file.fieldname === 'video') {
@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
 
     cb(null, uploadPath);
   },
-  filename: (req, file, cb) => {
+  filename: (_req, file, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const ext = path.extname(file.originalname);
     cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
@@ -33,7 +33,7 @@ const storage = multer.diskStorage({
 });
 
 // File filter
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if (file.fieldname === 'video') {
     // Accept video files
     if (file.mimetype.startsWith('video/')) {

@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { Types } from 'mongoose';
 import { Comment, Video } from '../models';
 import { ApiResponse } from '../utils/response';
 import { AuthRequest } from '../middleware/auth';
@@ -170,7 +171,7 @@ export const deleteComment = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     // Check ownership
-    if (comment.user.toString() !== req.user._id.toString()) {
+    if ((comment.user as Types.ObjectId).toString() !== (req.user._id as Types.ObjectId).toString()) {
       ApiResponse.error(res, 'Not authorized to delete this comment', 403);
       return;
     }
@@ -208,7 +209,7 @@ export const updateComment = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     // Check ownership
-    if (comment.user.toString() !== req.user._id.toString()) {
+    if ((comment.user as Types.ObjectId).toString() !== (req.user._id as Types.ObjectId).toString()) {
       ApiResponse.error(res, 'Not authorized to update this comment', 403);
       return;
     }

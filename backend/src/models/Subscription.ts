@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, Types } from 'mongoose';
 import { ISubscription } from '../types';
 
 const subscriptionSchema = new Schema<ISubscription>(
@@ -26,7 +26,7 @@ subscriptionSchema.index({ subscriber: 1, channel: 1 }, { unique: true });
 
 // Prevent self-subscription
 subscriptionSchema.pre('save', function (next) {
-  if (this.subscriber.equals(this.channel)) {
+  if ((this.subscriber as Types.ObjectId).equals(this.channel as Types.ObjectId)) {
     next(new Error('Cannot subscribe to your own channel'));
   } else {
     next();

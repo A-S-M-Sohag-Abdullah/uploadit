@@ -1,4 +1,4 @@
-import ffmpeg from 'fluent-ffmpeg';
+import ffmpeg, { FfprobeData } from 'fluent-ffmpeg';
 import path from 'path';
 import fs from 'fs';
 
@@ -7,7 +7,7 @@ import fs from 'fs';
  */
 export const getVideoDuration = (videoPath: string): Promise<number> => {
   return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+    ffmpeg.ffprobe(videoPath, (err: Error | null, metadata: FfprobeData) => {
       if (err) {
         reject(err);
       } else {
@@ -36,7 +36,7 @@ export const generateThumbnail = (
       .on('end', () => {
         resolve(thumbnailPath);
       })
-      .on('error', (err) => {
+      .on('error', (err: Error) => {
         reject(err);
       });
   });
@@ -65,7 +65,7 @@ export const convertVideoQuality = (
       .on('end', () => {
         resolve(outputPath);
       })
-      .on('error', (err) => {
+      .on('error', (err: Error) => {
         reject(err);
       })
       .run();

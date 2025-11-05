@@ -1,13 +1,11 @@
 import jwt from 'jsonwebtoken';
-import { IUser } from '../types';
+import type { StringValue } from 'ms';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_EXPIRE = process.env.JWT_EXPIRE || '7d';
 
 export const generateToken = (userId: string): string => {
-  return jwt.sign({ id: userId }, JWT_SECRET, {
-    expiresIn: JWT_EXPIRE,
-  });
+  const expiresIn: StringValue = (process.env.JWT_EXPIRE || '7d') as StringValue;
+  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn });
 };
 
 export const verifyToken = (token: string): any => {

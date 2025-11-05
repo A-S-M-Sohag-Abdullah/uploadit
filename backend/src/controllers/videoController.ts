@@ -1,5 +1,6 @@
 import { Response } from 'express';
-import { Video, User } from '../models';
+import { Types } from 'mongoose';
+import { Video } from '../models';
 import { ApiResponse } from '../utils/response';
 import { AuthRequest } from '../middleware/auth';
 import { getVideoDuration, generateThumbnail, deleteFile } from '../utils/ffmpeg';
@@ -161,7 +162,10 @@ export const getVideoById = async (req: AuthRequest, res: Response): Promise<voi
 
     // Check privacy settings
     if (video.privacy === VideoPrivacy.PRIVATE) {
-      if (!req.user || video.owner._id.toString() !== req.user._id.toString()) {
+      const ownerId = typeof video.owner === 'object' && video.owner !== null && '_id' in video.owner
+        ? (video.owner._id as Types.ObjectId).toString()
+        : (video.owner as Types.ObjectId).toString();
+      if (!req.user || ownerId !== (req.user._id as Types.ObjectId).toString()) {
         ApiResponse.error(res, 'This video is private', 403);
         return;
       }
@@ -193,7 +197,7 @@ export const updateVideo = async (req: AuthRequest, res: Response): Promise<void
     }
 
     // Check ownership
-    if (video.owner.toString() !== req.user._id.toString()) {
+    if ((video.owner as Types.ObjectId).toString() !== (req.user._id as Types.ObjectId).toString()) {
       ApiResponse.error(res, 'Not authorized to update this video', 403);
       return;
     }
@@ -208,7 +212,7 @@ export const updateVideo = async (req: AuthRequest, res: Response): Promise<void
     if (privacy) {
       video.privacy = privacy;
       if (privacy === VideoPrivacy.PRIVATE) {
-        video.publishedAt = null;
+        video.publishedAt = undefined;
       } else if (!video.publishedAt) {
         video.publishedAt = new Date();
       }
@@ -239,7 +243,7 @@ export const deleteVideo = async (req: AuthRequest, res: Response): Promise<void
     }
 
     // Check ownership
-    if (video.owner.toString() !== req.user._id.toString()) {
+    if ((video.owner as Types.ObjectId).toString() !== (req.user._id as Types.ObjectId).toString()) {
       ApiResponse.error(res, 'Not authorized to delete this video', 403);
       return;
     }

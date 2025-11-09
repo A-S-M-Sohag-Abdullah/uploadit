@@ -1,8 +1,10 @@
 import { Response } from 'express';
 import { Types } from 'mongoose';
-import { Comment, Video } from '../models';
 import { ApiResponse } from '../utils/response';
 import { AuthRequest } from '../middleware/auth';
+import { CommentService } from '../services';
+
+const commentService = new CommentService();
 
 /**
  * @desc    Create a comment
@@ -12,36 +14,14 @@ import { AuthRequest } from '../middleware/auth';
 export const createComment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { content, videoId, parentCommentId } = req.body;
+    const userId = (req.user._id as Types.ObjectId).toString();
 
-    if (!content || !videoId) {
-      ApiResponse.error(res, 'Please provide content and videoId', 400);
-      return;
-    }
-
-    // Check if video exists
-    const video = await Video.findById(videoId);
-    if (!video) {
-      ApiResponse.error(res, 'Video not found', 404);
-      return;
-    }
-
-    // If replying to a comment, check if parent exists
-    if (parentCommentId) {
-      const parentComment = await Comment.findById(parentCommentId);
-      if (!parentComment) {
-        ApiResponse.error(res, 'Parent comment not found', 404);
-        return;
-      }
-    }
-
-    const comment = await Comment.create({
+    const comment = await commentService.createComment({
       content,
-      video: videoId,
-      user: req.user._id,
-      parentComment: parentCommentId || null,
+      videoId,
+      userId,
+      parentCommentId,
     });
-
-    await comment.populate('user', 'username avatar');
 
     ApiResponse.created(res, { comment }, 'Comment created successfully');
   } catch (error: any) {
@@ -58,53 +38,14 @@ export const createComment = async (req: AuthRequest, res: Response): Promise<vo
 export const getVideoComments = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { videoId } = req.params;
-    const { page = 1, limit = 20, sort = '-createdAt' } = req.query;
+    const { page = 1, limit = 20 } = req.query;
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
-    const skip = (pageNum - 1) * limitNum;
 
-    // Get top-level comments (not replies)
-    const comments = await Comment.find({
-      video: videoId,
-      parentComment: null,
-    })
-      .populate('user', 'username avatar')
-      .sort(sort as string)
-      .skip(skip)
-      .limit(limitNum);
+    const result = await commentService.getVideoComments(videoId, pageNum, limitNum);
 
-    // Get reply counts for each comment
-    const commentsWithReplies = await Promise.all(
-      comments.map(async (comment) => {
-        const replyCount = await Comment.countDocuments({
-          parentComment: comment._id,
-        });
-        return {
-          ...comment.toObject(),
-          replyCount,
-        };
-      })
-    );
-
-    const total = await Comment.countDocuments({
-      video: videoId,
-      parentComment: null,
-    });
-
-    ApiResponse.success(
-      res,
-      {
-        comments: commentsWithReplies,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-        },
-      },
-      'Comments retrieved successfully'
-    );
+    ApiResponse.success(res, result, 'Comments retrieved successfully');
   } catch (error: any) {
     console.error('Get comments error:', error);
     ApiResponse.error(res, error.message || 'Error getting comments', 500);
@@ -123,33 +64,10 @@ export const getCommentReplies = async (req: AuthRequest, res: Response): Promis
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
-    const skip = (pageNum - 1) * limitNum;
 
-    const replies = await Comment.find({
-      parentComment: commentId,
-    })
-      .populate('user', 'username avatar')
-      .sort('createdAt')
-      .skip(skip)
-      .limit(limitNum);
+    const result = await commentService.getCommentReplies(commentId, pageNum, limitNum);
 
-    const total = await Comment.countDocuments({
-      parentComment: commentId,
-    });
-
-    ApiResponse.success(
-      res,
-      {
-        replies,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-        },
-      },
-      'Replies retrieved successfully'
-    );
+    ApiResponse.success(res, result, 'Replies retrieved successfully');
   } catch (error: any) {
     console.error('Get replies error:', error);
     ApiResponse.error(res, error.message || 'Error getting replies', 500);
@@ -163,22 +81,10 @@ export const getCommentReplies = async (req: AuthRequest, res: Response): Promis
  */
 export const deleteComment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const comment = await Comment.findById(req.params.id);
+    const commentId = req.params.id;
+    const userId = (req.user._id as Types.ObjectId).toString();
 
-    if (!comment) {
-      ApiResponse.error(res, 'Comment not found', 404);
-      return;
-    }
-
-    // Check ownership
-    if ((comment.user as Types.ObjectId).toString() !== (req.user._id as Types.ObjectId).toString()) {
-      ApiResponse.error(res, 'Not authorized to delete this comment', 403);
-      return;
-    }
-
-    // Delete comment and its replies
-    await Comment.deleteMany({ parentComment: comment._id });
-    await comment.deleteOne();
+    await commentService.deleteComment(commentId, userId);
 
     ApiResponse.success(res, null, 'Comment deleted successfully');
   } catch (error: any) {
@@ -195,28 +101,10 @@ export const deleteComment = async (req: AuthRequest, res: Response): Promise<vo
 export const updateComment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { content } = req.body;
+    const commentId = req.params.id;
+    const userId = (req.user._id as Types.ObjectId).toString();
 
-    if (!content) {
-      ApiResponse.error(res, 'Please provide content', 400);
-      return;
-    }
-
-    const comment = await Comment.findById(req.params.id);
-
-    if (!comment) {
-      ApiResponse.error(res, 'Comment not found', 404);
-      return;
-    }
-
-    // Check ownership
-    if ((comment.user as Types.ObjectId).toString() !== (req.user._id as Types.ObjectId).toString()) {
-      ApiResponse.error(res, 'Not authorized to update this comment', 403);
-      return;
-    }
-
-    comment.content = content;
-    await comment.save();
-    await comment.populate('user', 'username avatar');
+    const comment = await commentService.updateComment(commentId, userId, { content });
 
     ApiResponse.success(res, { comment }, 'Comment updated successfully');
   } catch (error: any) {

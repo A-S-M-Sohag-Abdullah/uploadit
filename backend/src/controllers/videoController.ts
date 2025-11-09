@@ -1,11 +1,11 @@
 import { Response } from 'express';
 import { Types } from 'mongoose';
-import { Video } from '../models';
 import { ApiResponse } from '../utils/response';
 import { AuthRequest } from '../middleware/auth';
-import { getVideoDuration, generateThumbnail, deleteFile } from '../utils/ffmpeg';
-import { VideoPrivacy, VideoStatus } from '../types';
-import path from 'path';
+import { VideoPrivacy } from '../types';
+import { VideoService } from '../services';
+
+const videoService = new VideoService();
 
 /**
  * @desc    Upload a new video
@@ -23,47 +23,19 @@ export const uploadVideo = async (req: AuthRequest, res: Response): Promise<void
     }
 
     const videoFile = files.video[0];
-    const videoPath = videoFile.path;
-    const videoUrl = `/${videoPath.replace(/\\/g, '/')}`;
+    const thumbnailFile = files.thumbnail ? files.thumbnail[0] : undefined;
+    const ownerId = (req.user._id as Types.ObjectId).toString();
 
-    // Get video duration
-    const duration = await getVideoDuration(videoPath);
-
-    // Generate or use uploaded thumbnail
-    let thumbnailUrl = '';
-    if (files.thumbnail && files.thumbnail[0]) {
-      const thumbnailPath = files.thumbnail[0].path;
-      thumbnailUrl = `/${thumbnailPath.replace(/\\/g, '/')}`;
-    } else {
-      // Auto-generate thumbnail
-      const thumbnailFileName = `thumbnail-${Date.now()}.jpg`;
-      const thumbnailPath = path.join('uploads', 'thumbnails', thumbnailFileName);
-      await generateThumbnail(videoPath, thumbnailPath);
-      thumbnailUrl = `/${thumbnailPath.replace(/\\/g, '/')}`;
-    }
-
-    // Parse tags if string
-    let parsedTags: string[] = [];
-    if (tags) {
-      parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
-    }
-
-    // Create video document
-    const video = await Video.create({
+    const video = await videoService.createVideo({
       title,
       description,
-      videoUrl,
-      thumbnailUrl,
-      duration,
+      videoFile,
+      thumbnailFile,
       category,
-      tags: parsedTags,
+      tags,
       privacy: privacy || VideoPrivacy.PUBLIC,
-      status: VideoStatus.READY,
-      owner: req.user._id,
-      publishedAt: privacy === VideoPrivacy.PRIVATE ? null : new Date(),
+      ownerId,
     });
-
-    await video.populate('owner', 'username channelName avatar');
 
     ApiResponse.created(res, { video }, 'Video uploaded successfully');
   } catch (error: any) {
@@ -79,64 +51,19 @@ export const uploadVideo = async (req: AuthRequest, res: Response): Promise<void
  */
 export const getVideos = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const {
-      page = 1,
-      limit = 12,
-      search,
-      category,
-      sort = '-createdAt',
-      privacy,
-    } = req.query;
-
-    const query: any = {
-      status: VideoStatus.READY,
-    };
-
-    // Only show public videos for non-authenticated users
-    if (!req.user) {
-      query.privacy = VideoPrivacy.PUBLIC;
-    } else if (privacy) {
-      query.privacy = privacy;
-    } else {
-      // Authenticated users can see public and unlisted videos
-      query.privacy = { $in: [VideoPrivacy.PUBLIC, VideoPrivacy.UNLISTED] };
-    }
-
-    // Search filter
-    if (search) {
-      query.$text = { $search: search as string };
-    }
-
-    // Category filter
-    if (category) {
-      query.category = category;
-    }
+    const { page = 1, limit = 12, category, privacy } = req.query;
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
-    const skip = (pageNum - 1) * limitNum;
 
-    const videos = await Video.find(query)
-      .populate('owner', 'username channelName avatar subscriberCount')
-      .sort(sort as string)
-      .skip(skip)
-      .limit(limitNum);
+    const result = await videoService.getVideos({
+      page: pageNum,
+      limit: limitNum,
+      category: category as string,
+      privacy: privacy as VideoPrivacy,
+    });
 
-    const total = await Video.countDocuments(query);
-
-    ApiResponse.success(
-      res,
-      {
-        videos,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-        },
-      },
-      'Videos retrieved successfully'
-    );
+    ApiResponse.success(res, result, 'Videos retrieved successfully');
   } catch (error: any) {
     console.error('Get videos error:', error);
     ApiResponse.error(res, error.message || 'Error getting videos', 500);
@@ -150,30 +77,13 @@ export const getVideos = async (req: AuthRequest, res: Response): Promise<void> 
  */
 export const getVideoById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const video = await Video.findById(req.params.id).populate(
-      'owner',
-      'username channelName avatar subscriberCount'
-    );
+    const videoId = req.params.id;
+    const userId = req.user ? (req.user._id as Types.ObjectId).toString() : undefined;
 
-    if (!video) {
-      ApiResponse.error(res, 'Video not found', 404);
-      return;
-    }
-
-    // Check privacy settings
-    if (video.privacy === VideoPrivacy.PRIVATE) {
-      const ownerId = typeof video.owner === 'object' && video.owner !== null && '_id' in video.owner
-        ? (video.owner._id as Types.ObjectId).toString()
-        : (video.owner as Types.ObjectId).toString();
-      if (!req.user || ownerId !== (req.user._id as Types.ObjectId).toString()) {
-        ApiResponse.error(res, 'This video is private', 403);
-        return;
-      }
-    }
+    const video = await videoService.getVideoById(videoId, userId);
 
     // Increment views
-    video.views += 1;
-    await video.save();
+    await videoService.incrementViews(videoId);
 
     ApiResponse.success(res, { video }, 'Video retrieved successfully');
   } catch (error: any) {
@@ -189,37 +99,18 @@ export const getVideoById = async (req: AuthRequest, res: Response): Promise<voi
  */
 export const updateVideo = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const video = await Video.findById(req.params.id);
-
-    if (!video) {
-      ApiResponse.error(res, 'Video not found', 404);
-      return;
-    }
-
-    // Check ownership
-    if ((video.owner as Types.ObjectId).toString() !== (req.user._id as Types.ObjectId).toString()) {
-      ApiResponse.error(res, 'Not authorized to update this video', 403);
-      return;
-    }
-
+    const videoId = req.params.id;
+    const userId = (req.user._id as Types.ObjectId).toString();
     const { title, description, category, tags, privacy } = req.body;
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const thumbnailFile = files?.thumbnail ? files.thumbnail[0] : undefined;
 
-    // Update fields
-    if (title) video.title = title;
-    if (description !== undefined) video.description = description;
-    if (category !== undefined) video.category = category;
-    if (tags) video.tags = typeof tags === 'string' ? JSON.parse(tags) : tags;
-    if (privacy) {
-      video.privacy = privacy;
-      if (privacy === VideoPrivacy.PRIVATE) {
-        video.publishedAt = undefined;
-      } else if (!video.publishedAt) {
-        video.publishedAt = new Date();
-      }
-    }
-
-    await video.save();
-    await video.populate('owner', 'username channelName avatar');
+    const video = await videoService.updateVideo(
+      videoId,
+      userId,
+      { title, description, category, tags, privacy },
+      thumbnailFile
+    );
 
     ApiResponse.success(res, { video }, 'Video updated successfully');
   } catch (error: any) {
@@ -235,26 +126,10 @@ export const updateVideo = async (req: AuthRequest, res: Response): Promise<void
  */
 export const deleteVideo = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const video = await Video.findById(req.params.id);
+    const videoId = req.params.id;
+    const userId = (req.user._id as Types.ObjectId).toString();
 
-    if (!video) {
-      ApiResponse.error(res, 'Video not found', 404);
-      return;
-    }
-
-    // Check ownership
-    if ((video.owner as Types.ObjectId).toString() !== (req.user._id as Types.ObjectId).toString()) {
-      ApiResponse.error(res, 'Not authorized to delete this video', 403);
-      return;
-    }
-
-    // Delete files
-    const videoPath = video.videoUrl.substring(1);
-    const thumbnailPath = video.thumbnailUrl.substring(1);
-    deleteFile(videoPath);
-    deleteFile(thumbnailPath);
-
-    await video.deleteOne();
+    await videoService.deleteVideo(videoId, userId);
 
     ApiResponse.success(res, null, 'Video deleted successfully');
   } catch (error: any) {
@@ -273,41 +148,16 @@ export const getUserVideos = async (req: AuthRequest, res: Response): Promise<vo
     const { userId } = req.params;
     const { page = 1, limit = 12 } = req.query;
 
-    const query: any = {
-      owner: userId,
-      status: VideoStatus.READY,
-    };
-
-    // Show private videos only to owner
-    if (!req.user || req.user._id.toString() !== userId) {
-      query.privacy = { $in: [VideoPrivacy.PUBLIC, VideoPrivacy.UNLISTED] };
-    }
-
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
-    const skip = (pageNum - 1) * limitNum;
 
-    const videos = await Video.find(query)
-      .populate('owner', 'username channelName avatar')
-      .sort('-createdAt')
-      .skip(skip)
-      .limit(limitNum);
+    const result = await videoService.getVideos({
+      page: pageNum,
+      limit: limitNum,
+      ownerId: userId,
+    });
 
-    const total = await Video.countDocuments(query);
-
-    ApiResponse.success(
-      res,
-      {
-        videos,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-        },
-      },
-      'User videos retrieved successfully'
-    );
+    ApiResponse.success(res, result, 'User videos retrieved successfully');
   } catch (error: any) {
     console.error('Get user videos error:', error);
     ApiResponse.error(res, error.message || 'Error getting user videos', 500);

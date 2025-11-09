@@ -1,7 +1,10 @@
 import { Response } from 'express';
-import { Subscription, User } from '../models';
+import { Types } from 'mongoose';
 import { ApiResponse } from '../utils/response';
 import { AuthRequest } from '../middleware/auth';
+import { SubscriptionService } from '../services';
+
+const subscriptionService = new SubscriptionService();
 
 /**
  * @desc    Toggle subscription to a channel
@@ -11,56 +14,12 @@ import { AuthRequest } from '../middleware/auth';
 export const toggleSubscription = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { channelId } = req.params;
+    const subscriberId = (req.user._id as Types.ObjectId).toString();
 
-    // Check if channel exists
-    const channel = await User.findById(channelId);
-    if (!channel) {
-      ApiResponse.error(res, 'Channel not found', 404);
-      return;
-    }
+    const result = await subscriptionService.toggleSubscription(subscriberId, channelId);
 
-    // Prevent self-subscription
-    if (channelId === req.user._id.toString()) {
-      ApiResponse.error(res, 'Cannot subscribe to your own channel', 400);
-      return;
-    }
-
-    // Check if already subscribed
-    const existingSubscription = await Subscription.findOne({
-      subscriber: req.user._id,
-      channel: channelId,
-    });
-
-    if (existingSubscription) {
-      // Unsubscribe
-      await existingSubscription.deleteOne();
-
-      // Decrement subscriber count
-      channel.subscriberCount = Math.max(0, channel.subscriberCount - 1);
-      await channel.save();
-
-      ApiResponse.success(
-        res,
-        { subscribed: false, subscriberCount: channel.subscriberCount },
-        'Unsubscribed successfully'
-      );
-    } else {
-      // Subscribe
-      await Subscription.create({
-        subscriber: req.user._id,
-        channel: channelId,
-      });
-
-      // Increment subscriber count
-      channel.subscriberCount += 1;
-      await channel.save();
-
-      ApiResponse.created(
-        res,
-        { subscribed: true, subscriberCount: channel.subscriberCount },
-        'Subscribed successfully'
-      );
-    }
+    const message = result.subscribed ? 'Subscribed successfully' : 'Unsubscribed successfully';
+    ApiResponse.success(res, result, message);
   } catch (error: any) {
     console.error('Toggle subscription error:', error);
     ApiResponse.error(res, error.message || 'Error toggling subscription', 500);
@@ -78,15 +37,13 @@ export const getSubscriptionStatus = async (
 ): Promise<void> => {
   try {
     const { channelId } = req.params;
+    const subscriberId = (req.user._id as Types.ObjectId).toString();
 
-    const subscription = await Subscription.findOne({
-      subscriber: req.user._id,
-      channel: channelId,
-    });
+    const subscribed = await subscriptionService.isSubscribed(subscriberId, channelId);
 
     ApiResponse.success(
       res,
-      { subscribed: !!subscription },
+      { subscribed },
       'Subscription status retrieved successfully'
     );
   } catch (error: any) {
@@ -103,36 +60,14 @@ export const getSubscriptionStatus = async (
 export const getMySubscriptions = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { page = 1, limit = 20 } = req.query;
+    const userId = (req.user._id as Types.ObjectId).toString();
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
-    const skip = (pageNum - 1) * limitNum;
 
-    const subscriptions = await Subscription.find({
-      subscriber: req.user._id,
-    })
-      .populate('channel', 'username channelName avatar subscriberCount')
-      .sort('-createdAt')
-      .skip(skip)
-      .limit(limitNum);
+    const result = await subscriptionService.getUserSubscriptions(userId, pageNum, limitNum);
 
-    const total = await Subscription.countDocuments({
-      subscriber: req.user._id,
-    });
-
-    ApiResponse.success(
-      res,
-      {
-        subscriptions: subscriptions.map((sub) => sub.channel),
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-        },
-      },
-      'Subscriptions retrieved successfully'
-    );
+    ApiResponse.success(res, result, 'Subscriptions retrieved successfully');
   } catch (error: any) {
     console.error('Get subscriptions error:', error);
     ApiResponse.error(res, error.message || 'Error getting subscriptions', 500);
@@ -154,33 +89,10 @@ export const getChannelSubscribers = async (
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
-    const skip = (pageNum - 1) * limitNum;
 
-    const subscribers = await Subscription.find({
-      channel: channelId,
-    })
-      .populate('subscriber', 'username avatar channelName')
-      .sort('-createdAt')
-      .skip(skip)
-      .limit(limitNum);
+    const result = await subscriptionService.getChannelSubscribers(channelId, pageNum, limitNum);
 
-    const total = await Subscription.countDocuments({
-      channel: channelId,
-    });
-
-    ApiResponse.success(
-      res,
-      {
-        subscribers: subscribers.map((sub) => sub.subscriber),
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-        },
-      },
-      'Subscribers retrieved successfully'
-    );
+    ApiResponse.success(res, result, 'Subscribers retrieved successfully');
   } catch (error: any) {
     console.error('Get subscribers error:', error);
     ApiResponse.error(res, error.message || 'Error getting subscribers', 500);

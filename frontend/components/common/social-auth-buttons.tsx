@@ -1,12 +1,14 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export function SocialAuthButtons() {
   const handleSocialAuth = (provider: string) => {
-    toast.info(`${provider} authentication coming soon!`);
-    // TODO: Implement OAuth flow for each provider
+    // Redirect to backend OAuth endpoint
+    const oauthUrl = `${API_URL}/oauth/${provider.toLowerCase()}`;
+    window.location.href = oauthUrl;
   };
 
   return (

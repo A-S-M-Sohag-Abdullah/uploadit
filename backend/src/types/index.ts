@@ -1,10 +1,14 @@
 import { Document } from 'mongoose';
 
 // User Types
+export type AuthProvider = 'local' | 'google' | 'facebook' | 'github' | 'twitter';
+
 export interface IUser extends Document {
   username: string;
   email: string;
-  password: string;
+  password?: string;
+  authProvider: AuthProvider;
+  socialId?: string;
   avatar?: string;
   channelName: string;
   channelDescription?: string;

@@ -5,3 +5,4 @@ export { VideoService } from './video.service';
 export { CommentService } from './comment.service';
 export { SubscriptionService } from './subscription.service';
 export { LikeService } from './like.service';
+export { OAuthService } from './oauth.service';

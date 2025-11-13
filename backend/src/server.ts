@@ -1,9 +1,13 @@
-import express, { Application } from 'express';
+// Load environment variables FIRST before any other imports
 import dotenv from 'dotenv';
+dotenv.config();
+
+import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
+import passport from './config/passport';
 import { connectDB } from './config/database';
 import { swaggerSpec } from './config/swagger';
 import { errorHandler, notFound } from './middleware/errorHandler';
@@ -14,9 +18,15 @@ import videoRoutes from './routes/videoRoutes';
 import commentRoutes from './routes/commentRoutes';
 import likeRoutes from './routes/likeRoutes';
 import subscriptionRoutes from './routes/subscriptionRoutes';
+import oauthRoutes from './routes/oauthRoutes';
 
-// Load environment variables
-dotenv.config();
+// Debug: Check if env variables are loaded
+console.log('Environment check:', {
+  hasGoogleId: !!process.env.GOOGLE_CLIENT_ID,
+  hasGoogleSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+  hasApiUrl: !!process.env.API_URL,
+  hasFrontendUrl: !!process.env.FRONTEND_URL
+});
 
 // Initialize express app
 const app: Application = express();
@@ -24,6 +34,10 @@ const PORT = process.env.PORT || 5000;
 
 // Connect to database
 connectDB();
+
+// Trust proxy - required for rate limiting and X-Forwarded-For headers
+// Set to true if behind a reverse proxy (nginx, heroku, etc.)
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(helmet());
@@ -33,6 +47,9 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Rate limiting
 const limiter = rateLimit({
@@ -61,6 +78,7 @@ app.get('/health', (_req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/oauth', oauthRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/likes', likeRoutes);
@@ -77,9 +95,9 @@ app.listen(PORT, () => {
 ║                                                           ║
 ║           🚀 UploadIt Backend Server Running 🚀           ║
 ║                                                           ║
-║   Server:        http://localhost:${PORT}                     ║
-║   API Docs:      http://localhost:${PORT}/api-docs            ║
-║   Environment:   ${process.env.NODE_ENV || 'development'}                        ║
+║   Server:        http://localhost:${PORT}                    ║
+║   API Docs:      http://localhost:${PORT}/api-docs           ║
+║   Environment:   ${process.env.NODE_ENV || 'development'}                              ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
   `);

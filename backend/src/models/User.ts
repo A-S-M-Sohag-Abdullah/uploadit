@@ -22,9 +22,21 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: function(this: IUser) {
+        // Password only required if no social auth provider
+        return !this.authProvider || this.authProvider === 'local';
+      },
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google', 'facebook', 'github', 'twitter'],
+      default: 'local',
+    },
+    socialId: {
+      type: String,
+      sparse: true, // Allows null but enforces uniqueness when present
     },
     avatar: {
       type: String,
@@ -53,7 +65,7 @@ const userSchema = new Schema<IUser>(
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);

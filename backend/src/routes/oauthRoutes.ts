@@ -109,9 +109,15 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
   });
 }
 
-// Twitter OAuth Routes
-if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
-  router.get("/twitter", passport.authenticate("twitter"));
+// Twitter OAuth 2.0 Routes
+if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
+  console.log("Twitter OAuth 2.0 is configured.");
+  router.get(
+    "/twitter",
+    passport.authenticate("twitter", {
+      scope: ["tweet.read", "users.read", "offline.access"],
+    })
+  );
 
   router.get(
     "/twitter/callback",
@@ -122,6 +128,11 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
     handleOAuthCallback
   );
 } else {
+  console.log(
+    "Twitter OAuth 2.0 is not configured.",
+    process.env.TWITTER_CLIENT_ID,
+    process.env.TWITTER_CLIENT_SECRET
+  );
   // Fallback for when Twitter OAuth is not configured
   router.get("/twitter", (_req, res) => {
     res.redirect(`${FRONTEND_URL}/auth/login?error=twitter_not_configured`);

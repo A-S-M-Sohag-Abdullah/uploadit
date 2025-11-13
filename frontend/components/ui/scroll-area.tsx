@@ -38,7 +38,7 @@ function ScrollBar({
     <ScrollAreaPrimitive.ScrollAreaScrollbar
       data-slot="scroll-area-scrollbar"
       orientation={orientation}
-      forceMount
+    
       className={cn(
         "flex touch-none p-px transition-colors select-none",
         orientation === "vertical" &&

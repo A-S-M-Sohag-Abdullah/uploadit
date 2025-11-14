@@ -65,7 +65,7 @@ export default function OAuthCallbackPage() {
   }, [searchParams, router, setAuth]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-purple-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-purple-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 w-full">
       <div className="text-center space-y-4">
         <div className="flex justify-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600"></div>

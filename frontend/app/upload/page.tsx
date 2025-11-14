@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -55,14 +54,22 @@ export default function UploadPage() {
       data,
       onProgress,
     }: {
-      data: any;
+      data: {
+        video: File;
+        thumbnail?: File;
+        title: string;
+        description?: string;
+        category?: string;
+        privacy: VideoPrivacy;
+        tags?: string[];
+      };
       onProgress: (progress: number) => void;
     }) => videosApi.uploadVideo(data, onProgress),
     onSuccess: () => {
       toast.success('Video uploaded successfully!');
       router.push('/');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Upload failed. Please try again.');
       setUploadProgress(0);
     },
@@ -132,7 +139,7 @@ export default function UploadPage() {
     uploadMutation.mutate({
       data: {
         video: videoFile,
-        thumbnail: thumbnailFile,
+        thumbnail: thumbnailFile || undefined,
         title: formData.title,
         description: formData.description,
         category: formData.category,
@@ -374,7 +381,7 @@ export default function UploadPage() {
             <Button
               type="submit"
               size="lg"
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              className="w-full bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               disabled={!videoFile || uploadMutation.isPending}
             >
               {uploadMutation.isPending ? (

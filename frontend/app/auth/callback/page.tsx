@@ -14,7 +14,7 @@ export default function OAuthCallbackPage() {
 
   useEffect(() => {
     const handleCallback = async () => {
-      const token = searchParams.get('token');
+      const success = searchParams.get('success');
       const error = searchParams.get('error');
 
       if (error) {
@@ -23,29 +23,19 @@ export default function OAuthCallbackPage() {
         return;
       }
 
-      if (!token) {
-        toast.error('No authentication token received');
+      if (!success) {
+        toast.error('Authentication failed');
         router.push('/auth/login');
         return;
       }
 
       try {
-        // Store token temporarily
-        localStorage.setItem('token', token);
-
-        console.log('Token stored, fetching user data...');
-        console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
-        console.log('Token:', token.substring(0, 20) + '...');
-
-        // Fetch user data
+        // Token is now in httpOnly cookie, just fetch user data
         const response = await apiGet<{ success: boolean; data: { user: User } }>('/auth/me');
 
-        console.log('API Response:', response);
-        console.log('Extracted user data to store:', response.data.user);
-
         if (response.success && response.data.user) {
-          // Set auth state
-          setAuth(response.data.user, token);
+          // Set auth state (token is in httpOnly cookie)
+          setAuth(response.data.user);
           toast.success('Successfully logged in!');
           router.push('/');
         } else {
@@ -53,10 +43,8 @@ export default function OAuthCallbackPage() {
         }
       } catch (error) {
         console.error('OAuth callback error:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
         const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
         toast.error(errorMessage);
-        localStorage.removeItem('token');
         router.push('/auth/login');
       }
     };

@@ -30,7 +30,8 @@ export default function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (response) => {
-      setAuth(response.data.user, response.data.token);
+      // Token is now stored in httpOnly cookie by the backend
+      setAuth(response.data.user);
       toast.success("Welcome back!");
       router.push("/");
     },

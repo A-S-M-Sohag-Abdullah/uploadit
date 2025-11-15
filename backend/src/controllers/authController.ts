@@ -23,7 +23,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       channelDescription,
     });
 
-    ApiResponse.created(res, result, 'User registered successfully');
+    // Set httpOnly cookie with token
+    res.cookie('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Return user data without token
+    ApiResponse.created(res, { user: result.user }, 'User registered successfully');
   } catch (error: any) {
     console.error('Register error:', error);
     ApiResponse.error(res, error.message || 'Error registering user', 500);
@@ -41,7 +50,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const result = await authService.login({ email, password });
 
-    ApiResponse.success(res, result, 'Login successful');
+    // Set httpOnly cookie with token
+    res.cookie('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Return user data without token
+    ApiResponse.success(res, { user: result.user }, 'Login successful');
   } catch (error: any) {
     console.error('Login error:', error);
     ApiResponse.error(res, error.message || 'Error logging in', 500);
@@ -84,5 +102,26 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
   } catch (error: any) {
     console.error('Update profile error:', error);
     ApiResponse.error(res, error.message || 'Error updating profile', 500);
+  }
+};
+
+/**
+ * @desc    Logout user
+ * @route   POST /api/auth/logout
+ * @access  Private
+ */
+export const logout = async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    // Clear the httpOnly cookie
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    ApiResponse.success(res, null, 'Logged out successfully');
+  } catch (error: any) {
+    console.error('Logout error:', error);
+    ApiResponse.error(res, error.message || 'Error logging out', 500);
   }
 };

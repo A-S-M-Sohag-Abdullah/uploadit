@@ -24,8 +24,16 @@ const handleOAuthCallback = async (req: Request, res: Response) => {
 
     const result = await oauthService.handleOAuthCallback(user);
 
-    // Redirect to frontend with token
-    res.redirect(`${FRONTEND_URL}/auth/callback?token=${result.token}`);
+    // Set httpOnly cookie with token
+    res.cookie('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Redirect to frontend callback page (no token in URL)
+    res.redirect(`${FRONTEND_URL}/auth/callback?success=true`);
   } catch (error: any) {
     console.error("OAuth callback error:", error);
     res.redirect(

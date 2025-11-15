@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getMe, updateProfile } from '../controllers/authController';
+import { register, login, getMe, updateProfile, logout } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 
 const router = Router();
@@ -112,5 +112,19 @@ router.get('/me', protect, getMe);
  *         description: Not authorized
  */
 router.put('/profile', protect, updateProfile);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ */
+router.post('/logout', protect, logout);
 
 export default router;

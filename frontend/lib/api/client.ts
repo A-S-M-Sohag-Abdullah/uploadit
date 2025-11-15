@@ -1,23 +1,10 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-// Helper to get auth token
-export function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('token');
-}
-
-// Helper to get auth headers
-export function getAuthHeaders(): HeadersInit {
-  const token = getAuthToken();
-  const headers: HeadersInit = {
+// Helper to get headers (no auth token needed - using httpOnly cookies)
+export function getHeaders(): HeadersInit {
+  return {
     'Content-Type': 'application/json',
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  return headers;
 }
 
 // Base fetch wrapper with error handling
@@ -29,18 +16,18 @@ export async function apiFetch<T>(
 
   const response = await fetch(url, {
     ...options,
+    credentials: 'include', // Important: sends httpOnly cookies with requests
     headers: {
-      ...getAuthHeaders(),
+      ...getHeaders(),
       ...options?.headers,
     },
   });
 
   if (!response.ok) {
     if (response.status === 401) {
-      // Clear auth and redirect
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+      // Don't redirect on /me endpoint (used for auth initialization)
+      // Redirect to login on unauthorized for other endpoints
+      if (typeof window !== 'undefined' && endpoint !== '/auth/me') {
         window.location.href = '/auth/login';
       }
     }
@@ -95,7 +82,6 @@ export async function apiPostFormData<T>(
   onProgress?: (progress: number) => void
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`;
-  const token = getAuthToken();
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -133,9 +119,9 @@ export async function apiPostFormData<T>(
     });
 
     xhr.open('POST', url);
-    if (token) {
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    }
+
+    // Enable sending cookies with the request
+    xhr.withCredentials = true;
 
     xhr.send(formData);
   });

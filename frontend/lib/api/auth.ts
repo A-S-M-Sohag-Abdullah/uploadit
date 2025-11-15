@@ -27,4 +27,9 @@ export const authApi = {
   updateProfile: async (data: Partial<User>): Promise<ApiResponse<{ user: User }>> => {
     return apiPut<ApiResponse<{ user: User }>>('/auth/profile', data);
   },
+
+  // Logout user (clears httpOnly cookie)
+  logout: async (): Promise<ApiResponse<null>> => {
+    return apiPost<ApiResponse<null>>('/auth/logout');
+  },
 };

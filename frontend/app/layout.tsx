@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { AuthProvider } from "@/providers/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { cookies } from "next/headers";
@@ -32,10 +33,12 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            <SidebarProvider defaultOpen={defaultOpen}>
-              {children}
-              <Toaster richColors position="top-right" />
-            </SidebarProvider>
+            <AuthProvider>
+              <SidebarProvider defaultOpen={defaultOpen}>
+                {children}
+                <Toaster richColors position="top-right" />
+              </SidebarProvider>
+            </AuthProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

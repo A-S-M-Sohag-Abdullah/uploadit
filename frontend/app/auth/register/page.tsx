@@ -31,7 +31,8 @@ export default function RegisterPage() {
   const registerMutation = useMutation({
     mutationFn: authApi.register,
     onSuccess: (response) => {
-      setAuth(response.data.user, response.data.token);
+      // Token is now stored in httpOnly cookie by the backend
+      setAuth(response.data.user);
       toast.success('Account created successfully!');
       router.push('/');
     },

@@ -13,14 +13,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth-store";
 import { ThemeToggle } from "@/components/common/theme-toggle";
+import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 export function UserMenu() {
   const router = useRouter();
   const { user, isAuthenticated, clearAuth } = useAuthStore();
 
-  const handleLogout = () => {
-    clearAuth();
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      // Call logout API to clear httpOnly cookie
+      await authApi.logout();
+      clearAuth();
+      toast.success("Logged out successfully");
+      router.push("/");
+    } catch {
+      // Even if API call fails, clear local auth state
+      clearAuth();
+      router.push("/");
+    }
   };
 
   const getAvatarUrl = (avatar?: string) => {

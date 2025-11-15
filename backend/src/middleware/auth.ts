@@ -13,12 +13,8 @@ export const protect = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    let token: string | undefined;
-
-    // Check for token in Authorization header
-    if (req.headers.authorization?.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
+    // Get token from httpOnly cookie
+    const token = req.cookies?.token;
 
     if (!token) {
       ApiResponse.error(res, 'Not authorized to access this route', 401);
@@ -54,11 +50,8 @@ export const optionalAuth = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    let token: string | undefined;
-
-    if (req.headers.authorization?.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
+    // Get token from httpOnly cookie
+    const token = req.cookies?.token;
 
     if (token) {
       const decoded = verifyToken(token);

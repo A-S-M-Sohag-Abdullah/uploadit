@@ -4,6 +4,7 @@ dotenv.config();
 
 import express, { Application } from 'express';
 import session from 'express-session';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -48,6 +49,9 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Cookie parser middleware (required for reading httpOnly cookies)
+app.use(cookieParser());
 
 // Session middleware (required for OAuth 2.0 PKCE)
 app.use(

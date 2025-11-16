@@ -25,7 +25,7 @@ import { VideoPrivacy } from '@/types';
 
 export default function UploadPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated,isLoading } = useAuthStore();
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -43,12 +43,11 @@ export default function UploadPage() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !isLoading) {
       toast.error('Please sign in to upload videos');
       router.push('/auth/login');
     }
-  }, [isAuthenticated, router]);
-
+  }, [isAuthenticated, isLoading, router]);
   const uploadMutation = useMutation({
     mutationFn: ({
       data,

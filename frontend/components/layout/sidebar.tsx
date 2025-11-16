@@ -79,7 +79,7 @@ const categories = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isLoading } = useAuthStore();
   const { state } = useSidebar();
 
   return (
@@ -196,7 +196,7 @@ export function AppSidebar() {
       </div>
 
       {/* Footer - Sign In Prompt - Sticky at Bottom */}
-      {!isAuthenticated && state === "expanded" && (
+      {!isLoading && !isAuthenticated && state === "expanded" && (
         <SidebarFooter className="sticky bottom-0 z-10 bg-sidebar border-t">
           <div className="p-4 rounded-lg bg-linear-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
             <p className="text-sm text-muted-foreground mb-3">

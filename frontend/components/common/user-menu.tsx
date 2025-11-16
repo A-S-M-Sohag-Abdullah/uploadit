@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { User, LogOut, Settings, Upload, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +19,7 @@ import { toast } from "sonner";
 
 export function UserMenu() {
   const router = useRouter();
-  const { user, isAuthenticated, clearAuth } = useAuthStore();
+  const { user, isAuthenticated, isLoading, clearAuth } = useAuthStore();
 
   const handleLogout = async () => {
     try {
@@ -43,6 +44,19 @@ export function UserMenu() {
     // Otherwise, it's a local uploaded file, prepend the uploads URL
     return `${process.env.NEXT_PUBLIC_UPLOADS_URL}${avatar}`;
   };
+
+  // Show loading skeleton while checking authentication
+  if (isLoading) {
+    return (
+      <>
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
+        <Skeleton className="h-9 w-20" />
+        <Skeleton className="h-9 w-28" />
+      </>
+    );
+  }
 
   if (!isAuthenticated) {
     return (

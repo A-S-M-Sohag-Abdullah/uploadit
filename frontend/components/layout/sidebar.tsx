@@ -37,6 +37,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 const mainNavigation = [
   { name: "Home", href: "/", icon: Home },
@@ -81,7 +82,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuthStore();
   const { state } = useSidebar();
-
+  
   return (
     <Sidebar collapsible="icon" className="border-r flex flex-col">
       {/* Logo Header - Sticky */}
@@ -100,7 +101,7 @@ export function AppSidebar() {
 
       {/* Scrollable Content Area */}
       <div className="flex-1 min-h-0">
-        <ScrollArea className="h-full">
+        <ScrollArea className={cn("h-full", state === "collapsed" && "**:data-[slot=scroll-area-scrollbar]:hidden")}>
           <SidebarContent>
             {/* Main Navigation */}
             <SidebarGroup>
